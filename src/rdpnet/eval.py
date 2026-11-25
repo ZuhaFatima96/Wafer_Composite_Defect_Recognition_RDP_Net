@@ -30,7 +30,8 @@ def evaluate(
             x = x.unsqueeze(dim=1).to(device)
             y = y.to(device)
 
-            outputs = model(x)
+            with torch.autocast(device_type="cuda", dtype=torch.float16):  # half precision, like training
+                outputs = model(x)
             if from_logits:
                 outputs = torch.sigmoid(outputs)
             pred = (outputs >= threshold).int()

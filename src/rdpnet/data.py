@@ -1,40 +1,28 @@
-import os
-from typing import Tuple
-
 import numpy as np
 import torch
-from torch.utils.data import DataLoader, TensorDataset, random_split
+from sklearn.model_selection import train_test_split
+from torch.utils.data import DataLoader, Subset, TensorDataset
+
+SPLIT_SEED = 3529  # fixed, so every run and evaluate.py see exactly the same train/val/test maps
 
 
-def load_npz_dataset(npz_path: str) -> TensorDataset:
-    if not os.path.isfile(npz_path):
-        raise FileNotFoundError(f"Dataset not found: {npz_path}")
+def make_dataloaders(npz_path, batch_size=128):
+    data = np.load(npz_path)
+    maps = torch.from_numpy(data["arr_0"].astype(np.float32))
+    labels = torch.from_numpy(data["arr_1"].astype(np.float32))
+    dataset = TensorDataset(maps, labels)
 
-    raw = np.load(npz_path)
-    data = raw["arr_0"].astype(np.float32)
-    labels = raw["arr_1"].astype(np.float32)
+    # each map gets the id of its label combination (38 in total), so every split keeps the same class balance
+    _, class_id = np.unique(data["arr_1"], axis=0, return_inverse=True)
 
-    x = torch.from_numpy(data)
-    y = torch.from_numpy(labels)
-    return TensorDataset(x, y)
+    # 20% test first, then 10% of what is left for validation (about 72 / 8 / 20 overall)
+    all_idx = np.arange(len(dataset))
+    train_idx, test_idx = train_test_split(all_idx, test_size=0.2, stratify=class_id, random_state=SPLIT_SEED)
+    train_idx, val_idx = train_test_split(train_idx, test_size=0.1, stratify=class_id[train_idx],
+                                          random_state=SPLIT_SEED)
+    print(f"train {len(train_idx)} | val {len(val_idx)} | test {len(test_idx)} maps")
 
-
-def make_dataloaders(
-    npz_path: str,
-    batch_size: int = 128,
-    val_split: float = 0.2,
-    seed: int = 3529,
-) -> Tuple[DataLoader, DataLoader]:
-    dataset = load_npz_dataset(npz_path)
-    data_len = len(dataset)
-    val_len = int(data_len * val_split)
-    train_len = data_len - val_len
-
-    g = torch.Generator()
-    g.manual_seed(seed)
-    train_ds, val_ds = random_split(dataset, [train_len, val_len], generator=g)
-
-    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False)
-    return train_loader, val_loader
-
+    train_loader = DataLoader(Subset(dataset, train_idx), batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(Subset(dataset, val_idx), batch_size=batch_size)
+    test_loader = DataLoader(Subset(dataset, test_idx), batch_size=batch_size)
+    return train_loader, val_loader, test_loader
