@@ -58,7 +58,7 @@ class SKAttention(nn.Module):
 
 
 class BasicBlock(nn.Module):
-    def __init__(self, in_ch: int, out_ch: int, stride: int):
+    def __init__(self, in_ch: int, out_ch: int, stride: int, use_dpm: bool = True):
         super().__init__()
         self.stride = stride
 
@@ -67,7 +67,8 @@ class BasicBlock(nn.Module):
         self.relu = nn.ReLU()
 
         self.conv2 = nn.Conv2d(out_ch, out_ch, kernel_size=3, stride=1, padding=1, bias=False)
-        self.skattention = SKAttention(channel=out_ch, reduction=16)
+        # the DPM; for the baseline CNN it is replaced by a layer that passes its input through unchanged
+        self.skattention = SKAttention(channel=out_ch, reduction=16) if use_dpm else nn.Identity()
         self.bn2 = nn.BatchNorm2d(out_ch)
 
         self.downsample = None
@@ -94,24 +95,24 @@ class BasicBlock(nn.Module):
 
 
 class RDPNet(nn.Module):
-    def __init__(self, output_dim: int = 8, in_channels: int = 1, apply_sigmoid: bool = True):
+    def __init__(self, output_dim: int = 8, in_channels: int = 1, apply_sigmoid: bool = True, use_dpm: bool = True):
         super().__init__()
         self.conv1 = nn.Conv2d(in_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
-        self.block_1_1 = BasicBlock(in_ch=64, out_ch=64, stride=1)
-        self.block_1_2 = BasicBlock(in_ch=64, out_ch=64, stride=1)
+        self.block_1_1 = BasicBlock(in_ch=64, out_ch=64, stride=1, use_dpm=use_dpm)
+        self.block_1_2 = BasicBlock(in_ch=64, out_ch=64, stride=1, use_dpm=use_dpm)
 
-        self.block_2_1 = BasicBlock(in_ch=64, out_ch=128, stride=2)
-        self.block_2_2 = BasicBlock(in_ch=128, out_ch=128, stride=1)
+        self.block_2_1 = BasicBlock(in_ch=64, out_ch=128, stride=2, use_dpm=use_dpm)
+        self.block_2_2 = BasicBlock(in_ch=128, out_ch=128, stride=1, use_dpm=use_dpm)
 
-        self.block_3_1 = BasicBlock(in_ch=128, out_ch=256, stride=2)
-        self.block_3_2 = BasicBlock(in_ch=256, out_ch=256, stride=1)
+        self.block_3_1 = BasicBlock(in_ch=128, out_ch=256, stride=2, use_dpm=use_dpm)
+        self.block_3_2 = BasicBlock(in_ch=256, out_ch=256, stride=1, use_dpm=use_dpm)
 
-        self.block_4_1 = BasicBlock(in_ch=256, out_ch=512, stride=2)
-        self.block_4_2 = BasicBlock(in_ch=512, out_ch=512, stride=1)
+        self.block_4_1 = BasicBlock(in_ch=256, out_ch=512, stride=2, use_dpm=use_dpm)
+        self.block_4_2 = BasicBlock(in_ch=512, out_ch=512, stride=1, use_dpm=use_dpm)
 
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(512, output_dim)

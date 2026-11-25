@@ -21,12 +21,13 @@ def main():
     p.add_argument("--batch-size", type=int, default=256)
     p.add_argument("--ckpt", required=True, help="Path to model checkpoint .mdl")
     p.add_argument("--threshold", type=float, default=0.5)
+    p.add_argument("--no-dpm", action="store_true", help="Use this for checkpoints trained with --no-dpm")
     args = p.parse_args()
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     _, _, test_loader = make_dataloaders(args.data, batch_size=args.batch_size)
 
-    model = RDPNet(output_dim=8, in_channels=1, apply_sigmoid=False).to(device)  # trained to output logits
+    model = RDPNet(output_dim=8, in_channels=1, apply_sigmoid=False, use_dpm=not args.no_dpm).to(device)  # outputs logits
     model.load_state_dict(torch.load(args.ckpt, map_location=device))
 
     acc, details = evaluate(

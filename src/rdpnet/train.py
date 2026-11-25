@@ -22,6 +22,7 @@ def train(
     epochs: int = 100,
     device: Optional[torch.device] = None,
     use_asl: bool = False,
+    use_dpm: bool = True,
     ckpt_dir: str = "checkpoint",
     resume: Optional[str] = None,
     seed: int = 3529,
@@ -34,7 +35,7 @@ def train(
     train_loader, val_loader, test_loader = make_dataloaders(npz_path, batch_size=batch_size)
 
     # the model always outputs logits; the sigmoid happens inside the loss and in evaluate()
-    model = RDPNet(output_dim=output_dim, in_channels=in_channels, apply_sigmoid=False).to(device)
+    model = RDPNet(output_dim=output_dim, in_channels=in_channels, apply_sigmoid=False, use_dpm=use_dpm).to(device)
     criterion = AsymmetricLoss() if use_asl else nn.BCEWithLogitsLoss()
     optimizer = optim.Adam(model.parameters(), lr=lr)
     scaler = torch.amp.GradScaler()  # mixed precision: scales the loss so small fp16 gradients don't round to zero

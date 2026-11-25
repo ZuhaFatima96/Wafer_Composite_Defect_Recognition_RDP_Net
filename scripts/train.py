@@ -20,6 +20,7 @@ def main():
     p.add_argument("--batch-size", type=int, default=128)
     p.add_argument("--lr", type=float, default=1e-3)
     p.add_argument("--asl", action="store_true", help="Use Asymmetric Loss instead of BCE")
+    p.add_argument("--no-dpm", action="store_true", help="Baseline CNN: remove every DPM")
     p.add_argument("--ckpt-dir", default="checkpoint")
     p.add_argument("--resume", default=None)
     p.add_argument("--seed", type=int, default=3529, help="Training seed (the data split stays fixed)")
@@ -32,6 +33,7 @@ def main():
         batch_size=args.batch_size,
         lr=args.lr,
         use_asl=args.asl,
+        use_dpm=not args.no_dpm,
         ckpt_dir=args.ckpt_dir,
         resume=args.resume,
         seed=args.seed,
