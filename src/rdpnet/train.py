@@ -23,6 +23,7 @@ def train(
     device: Optional[torch.device] = None,
     use_asl: bool = False,
     use_dpm: bool = True,
+    use_amp: bool = True,
     ckpt_dir: str = "checkpoint",
     resume: Optional[str] = None,
     seed: int = 3529,
@@ -38,7 +39,7 @@ def train(
     model = RDPNet(output_dim=output_dim, in_channels=in_channels, apply_sigmoid=False, use_dpm=use_dpm).to(device)
     criterion = AsymmetricLoss() if use_asl else nn.BCEWithLogitsLoss()
     optimizer = optim.Adam(model.parameters(), lr=lr)
-    scaler = torch.amp.GradScaler()  # mixed precision: scales the loss so small fp16 gradients don't round to zero
+    scaler = torch.amp.GradScaler(enabled=use_amp)  # mixed precision: scales the loss so small fp16 gradients don't round to zero
 
     if resume and os.path.isfile(resume):
         model.load_state_dict(torch.load(resume, map_location=device))
@@ -55,7 +56,7 @@ def train(
             x = x.unsqueeze(1).to(device)
             y = y.to(device)
 
-            with torch.autocast(device_type="cuda", dtype=torch.float16):  # forward pass in half precision
+            with torch.autocast(device_type="cuda", dtype=torch.float16, enabled=use_amp):  # half precision unless --fp32
                 logits = model(x)
             loss = criterion(logits.float(), y)  # loss in full precision
 
@@ -64,9 +65,13 @@ def train(
             scaler.step(optimizer)
             scaler.update()
 
+        if not torch.isfinite(loss):  # training has blown up, so stop instead of wasting GPU time
+            print(f"loss became {loss.item()} in epoch {epoch}, stopping early")
+            break
+
         # the model is chosen on validation; test accuracy is only logged, never used for choosing
-        val_acc, _ = evaluate(model, val_loader, device=device, from_logits=True)
-        test_acc, _ = evaluate(model, test_loader, device=device, from_logits=True)
+        val_acc, _ = evaluate(model, val_loader, device=device, from_logits=True, use_amp=use_amp)
+        test_acc, _ = evaluate(model, test_loader, device=device, from_logits=True, use_amp=use_amp)
         with open(log_path, "a", newline="") as f:
             csv.writer(f).writerow([epoch, loss.item(), val_acc, test_acc])
 

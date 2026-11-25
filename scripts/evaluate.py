@@ -37,6 +37,7 @@ def main():
         threshold=args.threshold,
         return_details=True,
         from_logits=True,
+        use_amp=False,  # the final test numbers are always computed in full precision
     )
     print(f"Test acc (mean over C1..C38): {acc:.6f}")
     print(f"Precision mean: {details['precision_mean']:.3f}")

@@ -15,6 +15,7 @@ def evaluate(
     threshold: float = 0.5,
     return_details: bool = False,
     from_logits: bool = False,
+    use_amp: bool = True,
 ) -> Tuple[float, Optional[Dict[str, Any]]]:
     model.eval()
 
@@ -30,7 +31,7 @@ def evaluate(
             x = x.unsqueeze(dim=1).to(device)
             y = y.to(device)
 
-            with torch.autocast(device_type="cuda", dtype=torch.float16):  # half precision, like training
+            with torch.autocast(device_type="cuda", dtype=torch.float16, enabled=use_amp):  # same precision as training
                 outputs = model(x)
             if from_logits:
                 outputs = torch.sigmoid(outputs)
