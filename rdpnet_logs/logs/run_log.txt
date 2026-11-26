@@ -1,0 +1,180 @@
+RDP-Net reproduction on MixedWM38: run log
+
+Each block below is one Kaggle notebook cell: its code, the start and finish times Kaggle
+recorded for it (the "execution" field in the cell metadata of the .ipynb, converted to
+Pakistan time, UTC+5), and everything it printed, copied unchanged. The only additions are
+the summary just below and the '--- seed N ---' markers, taken from each cell's seed loop.
+The notebooks themselves are in logs/notebooks/.
+
+Summary of the full-precision runs (computed from the 'Test acc' lines below;
+mean and sample standard deviation over 3 seeds):
+    Baseline CNN (BCE)     97.74 +/- 0.04   (block [1])
+    + DPM (BCE)            97.66 +/- 0.12   (block [2])
+    RDP-Net (DPM + ASL)    97.55 +/- 0.17   (blocks [3] and [4])
+
+============================================================================================
+Full precision: the numbers on the slides
+============================================================================================
+
+[1] notebook baseline-cnn-bce-full-precision-different-seeds.ipynb, cell 3 (code at commit 3c49777)
+    started   Thu 26 Nov 2026, 00:15:03 PKT
+    finished  Thu 26 Nov 2026, 01:10:29 PKT   (0 h 55 min)
+
+    # baseline CNN, BCE, full precision: 3 seeds (paper: 97.82)
+    for seed in [3529, 1, 2]:
+        !python scripts/train.py --data {data_path} --no-dpm --fp32 --seed {seed} --ckpt-dir runs/baseline_s{seed}
+        !python scripts/evaluate.py --data {data_path} --no-dpm --ckpt runs/baseline_s{seed}/best.mdl
+
+    --- seed 3529 ---
+    train 27370 | val 3042 | test 7603 maps
+    Best val acc: 0.978618 @ epoch 96
+    train 27370 | val 3042 | test 7603 maps
+    Test acc (mean over C1..C38): 0.976959
+    Precision mean: 97.650
+    Recall mean:    97.696
+    F1 mean:        97.656
+    --- seed 1 ---
+    train 27370 | val 3042 | test 7603 maps
+    Best val acc: 0.978618 @ epoch 80
+    train 27370 | val 3042 | test 7603 maps
+    Test acc (mean over C1..C38): 0.977532
+    Precision mean: 97.495
+    Recall mean:    97.753
+    F1 mean:        97.591
+    --- seed 2 ---
+    train 27370 | val 3042 | test 7603 maps
+    Best val acc: 0.979605 @ epoch 84
+    train 27370 | val 3042 | test 7603 maps
+    Test acc (mean over C1..C38): 0.977792
+    Precision mean: 97.745
+    Recall mean:    97.779
+    F1 mean:        97.745
+
+[2] notebook baseline-cnn-bce-full-precision-different-seeds.ipynb, cell 5 (code at commit 3c49777)
+    started   Thu 26 Nov 2026, 10:38:18 PKT
+    finished  Thu 26 Nov 2026, 15:21:56 PKT   (4 h 44 min)
+
+    # + DPM, BCE, full precision: 3 seeds (paper: 98.62)
+    for seed in [3529, 1, 2]:
+        !python scripts/train.py --data {data_path} --fp32 --seed {seed} --ckpt-dir runs/dpm_s{seed}
+        !python scripts/evaluate.py --data {data_path} --ckpt runs/dpm_s{seed}/best.mdl
+
+    --- seed 3529 ---
+    train 27370 | val 3042 | test 7603 maps
+    Best val acc: 0.978853 @ epoch 87
+    train 27370 | val 3042 | test 7603 maps
+    Test acc (mean over C1..C38): 0.977444
+    Precision mean: 97.577
+    Recall mean:    97.744
+    F1 mean:        97.642
+    --- seed 1 ---
+    train 27370 | val 3042 | test 7603 maps
+    Best val acc: 0.977961 @ epoch 80
+    train 27370 | val 3042 | test 7603 maps
+    Test acc (mean over C1..C38): 0.977157
+    Precision mean: 97.468
+    Recall mean:    97.716
+    F1 mean:        97.559
+    --- seed 2 ---
+    train 27370 | val 3042 | test 7603 maps
+    Best val acc: 0.979018 @ epoch 84
+    train 27370 | val 3042 | test 7603 maps
+    Test acc (mean over C1..C38): 0.975251
+    Precision mean: 97.512
+    Recall mean:    97.525
+    F1 mean:        97.502
+
+[3] notebook rdp-net-run.ipynb, cell 3 (code at commit 3c49777)
+    started   Wed 25 Nov 2026, 22:16:39 PKT
+    finished  Wed 25 Nov 2026, 23:46:08 PKT   (1 h 29 min)
+
+    # + DPM + ASL = RDP-Net, full precision (paper: 99.13)
+    !python scripts/train.py --data {data_path} --asl --fp32 --ckpt-dir runs/rdpnet_asl_fp32
+    !python scripts/evaluate.py --data {data_path} --ckpt runs/rdpnet_asl_fp32/best.mdl
+
+    --- seed 3529 (train.py default) ---
+    train 27370 | val 3042 | test 7603 maps
+    Best val acc: 0.972932 @ epoch 82
+    train 27370 | val 3042 | test 7603 maps
+    Test acc (mean over C1..C38): 0.975254
+    Precision mean: 97.976
+    Recall mean:    97.525
+    F1 mean:        97.736
+
+[4] notebook baseline-cnn-bce-full-precision-different-seeds.ipynb, cell 4 (code at commit 3c49777)
+    started   Thu 26 Nov 2026, 02:36:25 PKT
+    finished  Thu 26 Nov 2026, 05:37:37 PKT   (3 h 01 min)
+
+    # RDP-Net (DPM + ASL), full precision: 2 more seeds (seed 3529 is done)
+    for seed in [1, 2]:
+        !python scripts/train.py --data {data_path} --asl --fp32 --seed {seed} --ckpt-dir runs/rdpnet_s{seed}
+        !python scripts/evaluate.py --data {data_path} --ckpt runs/rdpnet_s{seed}/best.mdl
+
+    --- seed 1 ---
+    train 27370 | val 3042 | test 7603 maps
+    Best val acc: 0.972478 @ epoch 87
+    train 27370 | val 3042 | test 7603 maps
+    Test acc (mean over C1..C38): 0.974002
+    Precision mean: 97.834
+    Recall mean:    97.400
+    F1 mean:        97.604
+    --- seed 2 ---
+    train 27370 | val 3042 | test 7603 maps
+    Best val acc: 0.976425 @ epoch 73
+    train 27370 | val 3042 | test 7603 maps
+    Test acc (mean over C1..C38): 0.977292
+    Precision mean: 97.961
+    Recall mean:    97.729
+    F1 mean:        97.835
+
+============================================================================================
+Mixed precision (AMP): earlier runs, superseded; their log.csv files are in logs/runs/
+============================================================================================
+
+[5] notebook baseline-evaluation.ipynb, cell 3 (code at commit 268019a)
+    started   Wed 25 Nov 2026, 20:13:55 PKT
+    finished  Wed 25 Nov 2026, 20:24:05 PKT   (0 h 10 min)
+
+    # baseline CNN, BCE (paper: 97.82)
+    !python scripts/train.py --data {data_path} --no-dpm --ckpt-dir runs/baseline_bce
+    !python scripts/evaluate.py --data {data_path} --no-dpm --ckpt runs/baseline_bce/best.mdl
+
+    train 27370 | val 3042 | test 7603 maps
+    Best val acc: 0.979229 @ epoch 95
+    train 27370 | val 3042 | test 7603 maps
+    Test acc (mean over C1..C38): 0.977271
+    Precision mean: 97.568
+    Recall mean:    97.727
+    F1 mean:        97.630
+
+[6] notebook baseline-evaluation.ipynb, cell 4 (code at commit 268019a)
+    started   Wed 25 Nov 2026, 20:24:05 PKT
+    finished  Wed 25 Nov 2026, 21:02:58 PKT   (0 h 39 min)
+
+    # + DPM, BCE (paper: 98.62)
+    !python scripts/train.py --data {data_path} --ckpt-dir runs/dpm_bce
+    !python scripts/evaluate.py --data {data_path} --ckpt runs/dpm_bce/best.mdl
+
+    train 27370 | val 3042 | test 7603 maps
+    Best val acc: 0.976269 @ epoch 98
+    train 27370 | val 3042 | test 7603 maps
+    Test acc (mean over C1..C38): 0.976850
+    Precision mean: 97.522
+    Recall mean:    97.685
+    F1 mean:        97.581
+
+[7] notebook baseline-evaluation.ipynb, cell 5 (code at commit 268019a)
+    started   Wed 25 Nov 2026, 21:02:58 PKT
+    finished  Wed 25 Nov 2026, 21:38:11 PKT   (0 h 35 min)
+
+    # + DPM + ASL = RDP-Net (paper: 99.13)
+    !python scripts/train.py --data {data_path} --asl --ckpt-dir runs/rdpnet_asl
+    !python scripts/evaluate.py --data {data_path} --ckpt runs/rdpnet_asl/best.mdl
+
+    train 27370 | val 3042 | test 7603 maps
+    Best val acc: 0.965194 @ epoch 52
+    train 27370 | val 3042 | test 7603 maps
+    Test acc (mean over C1..C38): 0.967157
+    Precision mean: 97.326
+    Recall mean:    96.716
+    F1 mean:        97.004
